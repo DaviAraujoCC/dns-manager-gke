@@ -1,0 +1,40 @@
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: dns-manager-gke-cronjob
+  namespace: default
+spec:
+  schedule: "0 */2 * * *"
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccount: dns-manager-gke
+          containers:
+          - name: dns-manager-gke
+            image: <image-name>
+            imagePullPolicy: Always
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /tmp/service-account.json
+            - name: PROJECT_ID
+              value: project-id
+            - name: MANAGED_ZONE
+              value: managed_zone_example
+            - name: DNS_SUFFIX
+              value: .local.stg.example
+            volumeMounts:
+            - name: google-credential
+              mountPath: "/tmp"
+              readOnly: true
+          volumes:
+          - name: google-credential
+            secret:
+              secretName: dns-manager-gke-secret
+              items:
+              - key: service-account.json
+                path: service-account.json
+          terminationGracePeriodSeconds: 30
+          restartPolicy: OnFailure
